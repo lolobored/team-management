@@ -37,3 +37,10 @@ Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
   writable: true,
 })
+
+// jsdom does not implement scrollIntoView; AutocompleteInput calls it on arrow
+// navigation. Provide a no-op so the call doesn't raise an unhandled error
+// (which fails the vitest run).
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {}
+}
