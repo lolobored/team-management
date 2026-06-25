@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 3
+      author: laurent
+      changes:
+        - addColumn:
+            tableName: architect
+            columns:
+              - column:
+                  name: photo
+                  type: bytea
+              - column:
+                  name: photo_content_type
+                  type: varchar(100)

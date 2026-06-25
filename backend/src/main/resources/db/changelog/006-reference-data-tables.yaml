@@ -1,0 +1,135 @@
+databaseChangeLog:
+  - changeSet:
+      id: 6a
+      author: laurent
+      changes:
+        - createTable:
+            tableName: region
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+        - createTable:
+            tableName: country
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: region_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_country_region
+                    references: region(id)
+        - createTable:
+            tableName: city
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: country_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_city_country
+                    references: country(id)
+
+  - changeSet:
+      id: 6b
+      author: laurent
+      changes:
+        - insert:
+            tableName: region
+            columns:
+              - column: { name: name, value: "ANZ" }
+        - insert:
+            tableName: region
+            columns:
+              - column: { name: name, value: "ASIA" }
+
+  - changeSet:
+      id: 6c
+      author: laurent
+      changes:
+        - addColumn:
+            tableName: architect
+            columns:
+              - column:
+                  name: region_id
+                  type: bigint
+        - sql:
+            sql: "UPDATE architect SET region_id = (SELECT r.id FROM region r WHERE r.name = architect.region)"
+        - addNotNullConstraint:
+            tableName: architect
+            columnName: region_id
+            columnDataType: bigint
+        - dropColumn:
+            tableName: architect
+            columnName: region
+
+  - changeSet:
+      id: 6d
+      author: laurent
+      changes:
+        - addColumn:
+            tableName: architect
+            columns:
+              - column:
+                  name: country_id
+                  type: bigint
+              - column:
+                  name: city_id
+                  type: bigint
+        - dropColumn:
+            tableName: architect
+            columnName: city
+        - dropColumn:
+            tableName: architect
+            columnName: country
+
+  - changeSet:
+      id: 6e
+      author: laurent
+      changes:
+        - addColumn:
+            tableName: customer
+            columns:
+              - column:
+                  name: country_id
+                  type: bigint
+              - column:
+                  name: city_id
+                  type: bigint
+        - dropColumn:
+            tableName: customer
+            columnName: city
+        - dropColumn:
+            tableName: customer
+            columnName: country

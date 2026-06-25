@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5
+      author: laurent
+      changes:
+        - addColumn:
+            tableName: assignment
+            columns:
+              - column:
+                  name: end_month
+                  type: varchar(7)

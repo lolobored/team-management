@@ -1,0 +1,130 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: laurent
+      changes:
+        - createTable:
+            tableName: architect
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: varchar(255)
+              - column:
+                  name: region
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: customer
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: country
+                  type: varchar(255)
+              - column:
+                  name: city
+                  type: varchar(255)
+
+        - createTable:
+            tableName: project
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: customer_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_project_customer
+                    references: customer(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: date
+              - column:
+                  name: duration_months
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: default_usage_percent
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: official_date
+                  type: date
+              - column:
+                  name: plausible_date
+                  type: date
+
+        - createTable:
+            tableName: assignment
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: architect_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_assignment_architect
+                    references: architect(id)
+                    deleteCascade: true
+              - column:
+                  name: project_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_assignment_project
+                    references: project(id)
+                    deleteCascade: true
+              - column:
+                  name: usage_percent
+                  type: int
+              - column:
+                  name: tentative
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

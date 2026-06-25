@@ -1,0 +1,8 @@
+volumes/
+
+# Brainstorm companion sessions
+.superpowers/
+
+# Generated / tooling artifacts
+.playwright-mcp/
+backend/.gradle/

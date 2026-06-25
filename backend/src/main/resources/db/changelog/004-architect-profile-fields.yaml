@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4
+      author: laurent
+      changes:
+        - renameColumn:
+            tableName: architect
+            oldColumnName: name
+            newColumnName: last_name
+            columnDataType: varchar(255)
+        - addColumn:
+            tableName: architect
+            columns:
+              - column:
+                  name: first_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                  defaultValue: ""
+        - addColumn:
+            tableName: architect
+            columns:
+              - column:
+                  name: city
+                  type: varchar(255)
+              - column:
+                  name: country
+                  type: varchar(255)

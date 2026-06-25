@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 10
+      author: laurent
+      changes:
+        - createTable:
+            tableName: assignment_usage_override
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: assignment_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_override_assignment
+                    references: assignment(id)
+                    deleteCascade: true
+              - column:
+                  name: override_month
+                  type: varchar(7)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: usage_percent
+                  type: int
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: assignment_usage_override
+            columnNames: assignment_id, override_month
+            constraintName: uq_override_assignment_month

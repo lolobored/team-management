@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 8a
+      author: laurent
+      comment: Add string country/city columns to architect
+      changes:
+        - addColumn:
+            tableName: architect
+            columns:
+              - column:
+                  name: country
+                  type: varchar(255)
+              - column:
+                  name: city
+                  type: varchar(255)
+        - sql:
+            sql: >
+              UPDATE architect SET
+                country = (SELECT c.name FROM country c WHERE c.id = architect.country_id),
+                city = (SELECT ci.name FROM city ci WHERE ci.id = architect.city_id)
+        - dropColumn:
+            tableName: architect
+            columnName: region_id
+        - dropColumn:
+            tableName: architect
+            columnName: country_id
+        - dropColumn:
+            tableName: architect
+            columnName: city_id
+
+  - changeSet:
+      id: 8b
+      author: laurent
+      comment: Add string country/city columns to customer
+      changes:
+        - addColumn:
+            tableName: customer
+            columns:
+              - column:
+                  name: country
+                  type: varchar(255)
+              - column:
+                  name: city
+                  type: varchar(255)
+        - sql:
+            sql: >
+              UPDATE customer SET
+                country = (SELECT c.name FROM country c WHERE c.id = customer.country_id),
+                city = (SELECT ci.name FROM city ci WHERE ci.id = customer.city_id)
+        - dropColumn:
+            tableName: customer
+            columnName: country_id
+        - dropColumn:
+            tableName: customer
+            columnName: city_id
+
+  - changeSet:
+      id: 8c
+      author: laurent
+      comment: Drop reference data tables
+      changes:
+        - dropTable:
+            tableName: city
+        - dropTable:
+            tableName: country
+        - dropTable:
+            tableName: region

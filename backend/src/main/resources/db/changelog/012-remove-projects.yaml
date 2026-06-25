@@ -1,0 +1,135 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-1-add-customer-id-to-assignment
+      author: claude
+      changes:
+        - addColumn:
+            tableName: assignment
+            columns:
+              - column:
+                  name: customer_id
+                  type: bigint
+
+  - changeSet:
+      id: 012-2-populate-customer-id
+      author: claude
+      changes:
+        - sql:
+            sql: >
+              UPDATE assignment a
+              SET customer_id = p.customer_id
+              FROM project p
+              WHERE a.project_id = p.id
+
+  - changeSet:
+      id: 012-3-fill-null-usage-percent
+      author: claude
+      changes:
+        - sql:
+            sql: >
+              UPDATE assignment a
+              SET usage_percent = p.default_usage_percent
+              FROM project p
+              WHERE a.project_id = p.id
+              AND a.usage_percent IS NULL
+
+  - changeSet:
+      id: 012-4-aggregate-duplicates
+      author: claude
+      changes:
+        - sql:
+            sql: >
+              WITH ranked AS (
+                SELECT id,
+                       architect_id, customer_id, month,
+                       SUM(usage_percent) OVER (PARTITION BY architect_id, customer_id, month) AS total_usage,
+                       ROW_NUMBER() OVER (PARTITION BY architect_id, customer_id, month ORDER BY id) AS rn
+                FROM assignment
+              )
+              UPDATE assignment
+              SET usage_percent = ranked.total_usage,
+                  tentative = false
+              FROM ranked
+              WHERE assignment.id = ranked.id AND ranked.rn = 1
+        - sql:
+            sql: >
+              WITH ranked AS (
+                SELECT id,
+                       ROW_NUMBER() OVER (PARTITION BY architect_id, customer_id, month ORDER BY id) AS rn
+                FROM assignment
+              )
+              DELETE FROM assignment
+              WHERE id IN (SELECT id FROM ranked WHERE rn > 1)
+
+  - changeSet:
+      id: 012-5-make-customer-id-not-null
+      author: claude
+      changes:
+        - addNotNullConstraint:
+            tableName: assignment
+            columnName: customer_id
+            columnDataType: bigint
+
+  - changeSet:
+      id: 012-6-make-usage-percent-not-null
+      author: claude
+      changes:
+        - addNotNullConstraint:
+            tableName: assignment
+            columnName: usage_percent
+            columnDataType: int
+        - sql:
+            sql: >
+              UPDATE assignment SET tentative = false WHERE tentative = true
+
+  - changeSet:
+      id: 012-7-drop-old-constraint-and-project-id
+      author: claude
+      changes:
+        - dropUniqueConstraint:
+            tableName: assignment
+            constraintName: uq_assignment_architect_project_month
+        - dropColumn:
+            tableName: assignment
+            columnName: project_id
+
+  - changeSet:
+      id: 012-8-add-new-unique-constraint
+      author: claude
+      changes:
+        - addUniqueConstraint:
+            tableName: assignment
+            columnNames: architect_id, customer_id, month
+            constraintName: uk_assignment_architect_customer_month
+
+  - changeSet:
+      id: 012-9-add-fk-customer-id
+      author: claude
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: assignment
+            baseColumnNames: customer_id
+            referencedTableName: customer
+            referencedColumnNames: id
+            constraintName: fk_assignment_customer
+
+  - changeSet:
+      id: 012-10-drop-project-table
+      author: claude
+      changes:
+        - dropTable:
+            tableName: project
+
+  - changeSet:
+      id: 012-11-add-logo-to-customer
+      author: claude
+      changes:
+        - addColumn:
+            tableName: customer
+            columns:
+              - column:
+                  name: logo
+                  type: bytea
+              - column:
+                  name: logo_content_type
+                  type: varchar(100)

@@ -1,0 +1,58 @@
+databaseChangeLog:
+  - changeSet:
+      id: 14a
+      author: laurent
+      comment: "Rename architect table to team_member"
+      changes:
+        - renameTable:
+            oldTableName: architect
+            newTableName: team_member
+  - changeSet:
+      id: 14b
+      author: laurent
+      comment: "Drop old unique constraint before renaming the column it covers"
+      changes:
+        - dropUniqueConstraint:
+            tableName: assignment
+            constraintName: uk_assignment_architect_customer_month
+  - changeSet:
+      id: 14c
+      author: laurent
+      comment: "Rename assignment.architect_id to team_member_id"
+      changes:
+        - renameColumn:
+            tableName: assignment
+            oldColumnName: architect_id
+            newColumnName: team_member_id
+            columnDataType: BIGINT
+  - changeSet:
+      id: 14d
+      author: laurent
+      comment: "Re-add the unique constraint with the new column and name"
+      changes:
+        - addUniqueConstraint:
+            tableName: assignment
+            columnNames: team_member_id, customer_id, month
+            constraintName: uk_assignment_team_member_customer_month
+  - changeSet:
+      id: 14e
+      author: laurent
+      comment: "Rename the assignment foreign key to team_member"
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: assignment
+            constraintName: fk_assignment_architect
+        - addForeignKeyConstraint:
+            baseTableName: assignment
+            baseColumnNames: team_member_id
+            constraintName: fk_assignment_team_member
+            referencedTableName: team_member
+            referencedColumnNames: id
+  - changeSet:
+      id: 14f
+      author: laurent
+      comment: "Rename the team_member primary key constraint (PostgreSQL default name)"
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: "ALTER TABLE team_member RENAME CONSTRAINT architect_pkey TO team_member_pkey"

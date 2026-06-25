@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: teammanagement
+      POSTGRES_USER: tm
+      POSTGRES_PASSWORD: tm
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tm -d teammanagement"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - ./volumes/pgdata:/var/lib/postgresql/data
+
+  backend:
+    image: lolobored/team-management-backend:latest
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/team-members || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  frontend:
+    image: lolobored/team-management-frontend:latest
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+

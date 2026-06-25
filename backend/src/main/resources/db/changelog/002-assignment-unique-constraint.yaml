@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2
+      author: laurent
+      changes:
+        - addUniqueConstraint:
+            tableName: assignment
+            columnNames: architect_id, project_id
+            constraintName: uq_assignment_architect_project

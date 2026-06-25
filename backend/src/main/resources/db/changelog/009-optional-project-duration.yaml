@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: 9
+      author: laurent
+      changes:
+        - dropNotNullConstraint:
+            tableName: project
+            columnName: duration_months
+            columnDataType: int

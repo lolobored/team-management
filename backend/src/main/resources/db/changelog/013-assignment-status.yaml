@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 13a
+      author: laurent
+      comment: "Add status column to assignment"
+      changes:
+        - addColumn:
+            tableName: assignment
+            columns:
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: true
+  - changeSet:
+      id: 13b
+      author: laurent
+      comment: "Backfill status from tentative"
+      changes:
+        - update:
+            tableName: assignment
+            columns:
+              - column:
+                  name: status
+                  value: POTENTIAL
+            where: tentative = TRUE
+        - update:
+            tableName: assignment
+            columns:
+              - column:
+                  name: status
+                  value: CONFIRMED
+            where: tentative = FALSE
+  - changeSet:
+      id: 13c
+      author: laurent
+      comment: "Default + non-null on status, drop tentative"
+      changes:
+        - addDefaultValue:
+            tableName: assignment
+            columnName: status
+            columnDataType: varchar(20)
+            defaultValue: CONFIRMED
+        - addNotNullConstraint:
+            tableName: assignment
+            columnName: status
+            columnDataType: varchar(20)
+            defaultNullValue: CONFIRMED
+        - dropColumn:
+            tableName: assignment
+            columnName: tentative

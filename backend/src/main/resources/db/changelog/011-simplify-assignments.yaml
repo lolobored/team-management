@@ -1,0 +1,109 @@
+databaseChangeLog:
+  - changeSet:
+      id: 11a
+      author: laurent
+      comment: "Add month column to assignment"
+      changes:
+        - addColumn:
+            tableName: assignment
+            columns:
+              - column:
+                  name: month
+                  type: varchar(7)
+                  constraints:
+                    nullable: true
+  - changeSet:
+      id: 11b
+      author: laurent
+      comment: "Expand range-based assignments into per-month rows and populate month"
+      changes:
+        - sql:
+            comment: "Insert expanded rows for assignments that span multiple months (end_month > start_month)"
+            sql: >
+              INSERT INTO assignment (architect_id, project_id, usage_percent, tentative, month)
+              SELECT a.architect_id, a.project_id, a.usage_percent, a.tentative,
+                     TO_CHAR(gs, 'YYYY-MM')
+              FROM assignment a,
+                   generate_series(
+                     (a.start_month || '-01')::date + interval '1 month',
+                     (a.end_month || '-01')::date,
+                     interval '1 month'
+                   ) gs
+              WHERE a.start_month IS NOT NULL
+                AND a.end_month IS NOT NULL
+                AND a.end_month > a.start_month
+        - sql:
+            comment: "Set month = start_month for the original rows"
+            sql: "UPDATE assignment SET month = start_month WHERE start_month IS NOT NULL AND month IS NULL"
+        - sql:
+            comment: "Fallback for rows with no start_month at all"
+            sql: "UPDATE assignment SET month = '2026-01' WHERE month IS NULL"
+  - changeSet:
+      id: 11c
+      author: laurent
+      comment: "Make month non-nullable and drop old columns"
+      changes:
+        - addNotNullConstraint:
+            tableName: assignment
+            columnName: month
+            columnDataType: varchar(7)
+        - dropColumn:
+            tableName: assignment
+            columnName: start_month
+        - dropColumn:
+            tableName: assignment
+            columnName: end_month
+  - changeSet:
+      id: 11d
+      author: laurent
+      comment: "Update unique constraint to include month"
+      changes:
+        - dropUniqueConstraint:
+            tableName: assignment
+            constraintName: uq_assignment_architect_project
+        - addUniqueConstraint:
+            tableName: assignment
+            columnNames: architect_id, project_id, month
+            constraintName: uq_assignment_architect_project_month
+  - changeSet:
+      id: 11e
+      author: laurent
+      comment: "Drop assignment_usage_override table"
+      changes:
+        - dropTable:
+            tableName: assignment_usage_override
+  - changeSet:
+      id: 11f
+      author: laurent
+      comment: "Drop project date/duration fields and rename POTENTIAL to UPCOMING"
+      changes:
+        - dropColumn:
+            tableName: project
+            columnName: duration_months
+        - dropColumn:
+            tableName: project
+            columnName: official_date
+        - dropColumn:
+            tableName: project
+            columnName: plausible_date
+        - sql:
+            sql: "UPDATE project SET status = 'UPCOMING' WHERE status = 'POTENTIAL'"
+  - changeSet:
+      id: 11g
+      author: laurent
+      comment: "Clear startDate for ACTIVE projects"
+      changes:
+        - sql:
+            sql: "UPDATE project SET start_date = NULL WHERE status = 'ACTIVE'"
+  - changeSet:
+      id: 11h
+      author: laurent
+      comment: "Convert start_date to start_month (varchar YYYY-MM)"
+      changes:
+        - sql:
+            sql: "ALTER TABLE project ADD COLUMN start_month VARCHAR(7)"
+        - sql:
+            sql: "UPDATE project SET start_month = TO_CHAR(start_date, 'YYYY-MM') WHERE start_date IS NOT NULL"
+        - dropColumn:
+            tableName: project
+            columnName: start_date
