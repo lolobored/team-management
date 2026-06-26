@@ -9,6 +9,11 @@ updates:
       - "dependencies"
       - "java"
     open-pull-requests-limit: 5
+    ignore:
+      # Spring Boot 4.x is a migration (Jackson 3 + modular test infra), not a
+      # drop-in bump — staying on supported 3.5.x until a deliberate migration.
+      - dependency-name: "org.springframework.boot"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/frontend"
@@ -19,6 +24,11 @@ updates:
       - "dependencies"
       - "javascript"
     open-pull-requests-limit: 5
+    ignore:
+      # vite 8 is blocked by vite-plugin-vue-devtools (no vite-8-compatible
+      # release yet). On vite 7 until devtools catches up.
+      - dependency-name: "vite"
+        versions: [">=8.0.0"]
 
   - package-ecosystem: "docker"
     directory: "/backend"
