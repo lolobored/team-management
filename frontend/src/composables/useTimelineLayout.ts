@@ -75,7 +75,7 @@ export function buildTimelineLayout(
       return x[1].customerName.localeCompare(y[1].customerName)
     })
 
-    let topOffset = 0
+    let bottomOffset = 0
     const lanes: LayoutLane[] = ordered.map(([customerId, lane]) => {
       const pills: LayoutPill[] = []
       let i = 0
@@ -109,11 +109,11 @@ export function buildTimelineLayout(
       const laneObj: LayoutLane = {
         customerId,
         customerName: lane.customerName,
-        bottomOffsetPx: topOffset,
+        bottomOffsetPx: bottomOffset,
         laneHeightPx,
         pills,
       }
-      topOffset += laneHeightPx + LANE_GAP_PX
+      bottomOffset += laneHeightPx + LANE_GAP_PX
       return laneObj
     })
 

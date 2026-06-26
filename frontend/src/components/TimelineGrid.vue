@@ -359,8 +359,8 @@ function onDrop(event: DragEvent, teamMemberId: number, month: string) {
 .usage-editor-save:hover { background: #2563eb; }
 .pill .grip { position: absolute; top: 0; bottom: 0; width: 7px; cursor: ew-resize; opacity: 0; background: #2563eb; border-radius: 3px; }
 .pill:hover .grip { opacity: 0.85; }
-.grip-l { left: -3px; }
-.grip-r { right: -3px; }
+.grip-l { left: 0; }
+.grip-r { right: 0; }
 .drag-preview { position: absolute; top: 0; bottom: 0; background: #eff6ff; outline: 2px dashed #3b82f6; outline-offset: -2px; pointer-events: none; z-index: 1; }
 .conflict-overlay { position: fixed; inset: 0; z-index: 210; background: rgba(15,23,42,0.15); }
 .conflict-popup { position: fixed; top: 40%; left: 50%; transform: translateX(-50%); background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,0.18); padding: 14px; width: 240px; font-size: 0.85rem; z-index: 211; }
