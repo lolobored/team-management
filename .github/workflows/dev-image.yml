@@ -20,6 +20,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -33,6 +36,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: ./backend
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             lolobored/team-management-backend:${{ inputs.tag }}
@@ -44,6 +48,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: ./frontend
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             lolobored/team-management-frontend:${{ inputs.tag }}
