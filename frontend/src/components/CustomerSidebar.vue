@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { customerApi } from '@/api/client'
+import { useAuthStore } from '@/stores/auth'
 import type { Customer } from '@/types'
 
 const props = defineProps<{ customers: Customer[] }>()
+const auth = useAuthStore()
 
 const collapsed = ref(false)
 const filter = ref('')
@@ -21,6 +23,7 @@ const filteredCustomers = computed(() => {
 })
 
 function onDragStart(event: DragEvent, customer: Customer) {
+  if (!auth.canWrite) return
   event.dataTransfer!.setData('application/json', JSON.stringify({
     type: 'customer',
     customerId: customer.id,
@@ -46,7 +49,7 @@ function onDragStart(event: DragEvent, customer: Customer) {
       <div>
         <div v-for="customer in filteredCustomers" :key="customer.id"
           class="customer-item"
-          draggable="true" @dragstart="onDragStart($event, customer)">
+          :draggable="auth.canWrite" @dragstart="onDragStart($event, customer)">
           <img :src="customerApi.logoUrl(customer.id)" class="customer-logo"
                @error="($event.target as HTMLImageElement).style.display = 'none'" />
           <div class="customer-text">

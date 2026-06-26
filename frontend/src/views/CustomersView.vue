@@ -3,9 +3,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useCustomersStore } from '@/stores/customers'
 import { customerApi } from '@/api/client'
 import CustomerForm from '@/components/CustomerForm.vue'
+import { useAuthStore } from '@/stores/auth'
 import type { Customer } from '@/types'
 
 const customerStore = useCustomersStore()
+const auth = useAuthStore()
 
 const filterText = ref('')
 const sortBy = ref<'name' | 'country'>('name')
@@ -58,11 +60,13 @@ async function onDelete(id: number) {
             <option value="country">Country</option>
           </select>
         </label>
-        <button class="primary" @click="openAdd">+ Add Customer</button>
+        <div v-if="auth.canWrite" data-testid="customer-create">
+          <button class="primary" @click="openAdd">+ Add Customer</button>
+        </div>
       </div>
     </div>
 
-    <div v-if="showForm" class="form-overlay">
+    <div v-if="showForm && auth.canWrite" class="form-overlay">
       <div class="form-panel">
         <h2>{{ editingCustomer ? 'Edit' : 'Add' }} Customer</h2>
         <CustomerForm :customer="editingCustomer" @submit="onSubmit" @cancel="showForm = false" />
@@ -79,7 +83,7 @@ async function onDelete(id: number) {
             {{ [customer.city, customer.country].filter(Boolean).join(', ') }}
           </span>
         </div>
-        <div class="customer-actions">
+        <div v-if="auth.canWrite" class="customer-actions">
           <button @click="openEdit(customer)">Edit</button>
           <button class="danger" @click="onDelete(customer.id)">Delete</button>
         </div>

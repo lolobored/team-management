@@ -1,8 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import TimelineGrid from '@/components/TimelineGrid.vue'
 import type { TeamMemberUsage } from '@/types'
+
+vi.mock('@/stores/auth', () => ({
+  useAuthStore: () => ({
+    canWrite: true,
+    isAdmin: false,
+    currentUser: { email: 'writer@test.com', role: 'VIEW_WRITE', mustChangePassword: false },
+  }),
+}))
 
 const months = ['2026-01', '2026-02', '2026-03']
 

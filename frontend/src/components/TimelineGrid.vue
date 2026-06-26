@@ -3,8 +3,11 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { teamMemberApi } from '@/api/client'
 import type { TeamMemberUsage, AssignmentStatus } from '@/types'
 import { buildTimelineLayout, computeExtendPlan, type LayoutPill, type LayoutRow } from '@/composables/useTimelineLayout'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{ usageData: TeamMemberUsage[]; months: string[]; zoom: number }>()
+
+const auth = useAuthStore()
 
 const emit = defineEmits<{
   drop: [teamMemberId: number, month: string, data: { customerId: number; status: AssignmentStatus; defaultUsagePercent: number; usagePercent?: number }]
@@ -39,6 +42,7 @@ const STATUS_OPTIONS: { value: AssignmentStatus; label: string; swatch: string }
 const statusMenu = ref<{ assignmentIds: number[]; current: AssignmentStatus; x: number; y: number } | null>(null)
 
 function openStatusMenu(event: MouseEvent, pill: LayoutPill) {
+  if (!auth.canWrite) return
   event.preventDefault()
   event.stopPropagation()
   statusMenu.value = { assignmentIds: pill.assignmentIds, current: pill.status, x: event.clientX, y: event.clientY }
@@ -153,6 +157,7 @@ function onAvatarEnter(event: MouseEvent, teamMemberId: number) {
 function onAvatarLeave() { hoverPhoto.value = null }
 
 function openEditor(event: MouseEvent, pill: LayoutPill) {
+  if (!auth.canWrite) return
   event.stopPropagation()
   if (editing.value) saveUsage()
   editing.value = { assignmentIds: pill.assignmentIds, usage: pill.usage, el: event.currentTarget as HTMLElement }
@@ -190,6 +195,7 @@ function onDragOver(event: DragEvent) {
   event.dataTransfer!.dropEffect = 'copy'
 }
 function onDrop(event: DragEvent, teamMemberId: number, month: string) {
+  if (!auth.canWrite) return
   event.preventDefault()
   const raw = event.dataTransfer!.getData('application/json')
   if (!raw) return
@@ -254,11 +260,11 @@ function onDrop(event: DragEvent, teamMemberId: number, month: string) {
             :title="`${pill.customerName} - ${pill.usage}%`"
             @click.stop="openEditor($event, pill)"
             @contextmenu="openStatusMenu($event, pill)">
-            <span class="grip grip-l" @pointerdown="startDrag($event, row, pill, 'l')"></span>
+            <span v-if="auth.canWrite" class="grip grip-l" @pointerdown="startDrag($event, row, pill, 'l')"></span>
             <span class="pill-label">{{ pill.customerName }} {{ pill.usage }}%</span>
-            <button class="pill-unassign" data-testid="pill-unassign"
+            <button v-if="auth.canWrite" class="pill-unassign" data-testid="pill-unassign"
               @click.stop="emit('unassign', pill.assignmentIds)" title="Unassign">&minus;</button>
-            <span class="grip grip-r" @pointerdown="startDrag($event, row, pill, 'r')"></span>
+            <span v-if="auth.canWrite" class="grip grip-r" @pointerdown="startDrag($event, row, pill, 'r')"></span>
           </div>
         </div>
         <div v-if="drag && drag.row.teamMemberId === row.teamMemberId" class="drag-preview" :style="{
