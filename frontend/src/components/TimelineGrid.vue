@@ -348,7 +348,7 @@ function onDrop(event: DragEvent, teamMemberId: number, month: string) {
 .total-label { position: absolute; top: 1px; right: 3px; font-size: 0.7rem; font-weight: 700; background: rgba(255,255,255,0.75); border-radius: 3px; padding: 0 3px; }
 .total-label.over { background: rgba(255,255,255,0.92); }
 .lane { position: absolute; left: 0; right: 0; }
-.pill { position: absolute; bottom: 0; box-sizing: border-box; font-size: 0.7rem; padding: 1px 4px; border-radius: 3px;
+.pill { position: absolute; bottom: 0; box-sizing: border-box; font-size: 0.7rem; padding: 1px 8px; border-radius: 999px;
   background: #bfdbfe; border: 1px solid #93c5fd; white-space: nowrap; overflow: hidden; display: flex; align-items: flex-end;
   gap: 2px; cursor: pointer; }
 .pill:hover { background: #93c5fd; }
