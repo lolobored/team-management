@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
@@ -21,14 +22,18 @@ public class AuthController {
 
     public record LoginRequest(String email, String password) {}
     public record MeResponse(String email, Role role, boolean mustChangePassword) {}
+    public record ChangePasswordRequest(String currentPassword, String newPassword) {}
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository users;
+    private final PasswordEncoder encoder;
     private final SecurityContextRepository contextRepository = new HttpSessionSecurityContextRepository();
 
-    public AuthController(AuthenticationManager authenticationManager, UserRepository users) {
+    public AuthController(AuthenticationManager authenticationManager, UserRepository users,
+                          PasswordEncoder encoder) {
         this.authenticationManager = authenticationManager;
         this.users = users;
+        this.encoder = encoder;
     }
 
     @PostMapping("/login")
@@ -65,5 +70,21 @@ public class AuthController {
             session.invalidate();
         }
         SecurityContextHolder.clearContext();
+    }
+
+    @PostMapping("/change-password")
+    @org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(@RequestBody ChangePasswordRequest body, Authentication authentication) {
+        User u = users.findByEmail(authentication.getName()).orElseThrow();
+        if (!encoder.matches(body.currentPassword(), u.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "current password is incorrect");
+        }
+        java.util.List<String> failures = PasswordPolicy.validate(body.newPassword());
+        if (!failures.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "password policy: " + failures);
+        }
+        u.setPasswordHash(encoder.encode(body.newPassword()));
+        u.setMustChangePassword(false);
+        users.save(u);
     }
 }

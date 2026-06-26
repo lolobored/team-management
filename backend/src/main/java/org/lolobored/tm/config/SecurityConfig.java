@@ -40,7 +40,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+            org.lolobored.tm.user.MustChangePasswordFilter mustChangePasswordFilter) throws Exception {
         CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
         http
             .cors(cors -> {})
@@ -56,6 +57,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/**").hasRole("VIEW")
                 .requestMatchers("/api/**").hasRole("VIEW_WRITE")
                 .anyRequest().denyAll())
+            .addFilterAfter(mustChangePasswordFilter,
+                org.springframework.security.web.access.intercept.AuthorizationFilter.class)
             .exceptionHandling(e -> e.authenticationEntryPoint(
                 (request, response, ex) -> response.sendError(401, "Unauthorized")))
             .httpBasic(b -> b.disable())
