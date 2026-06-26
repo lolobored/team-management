@@ -77,16 +77,41 @@ describe('buildTimelineLayout', () => {
     expect(row.lanes.map(l => l.customerName)).toEqual(['Acme', 'Delta', 'Beta'])
   })
 
-  it('stacks lanes with cumulative offsets and gaps', () => {
+  it('row height is fixed to ref regardless of usage', () => {
+    const data = member({
+      '2026-01': { total: 20, assignments: [cell(10, 5, 'Acme', 20)] },
+    })
+    const [row] = buildTimelineLayout(data, MONTHS, 160)
+    expect(row.rowHeightPx).toBe(160)
+    // an empty member is still a full-height capacity row
+    const [empty] = buildTimelineLayout(member({}), MONTHS, 160)
+    expect(empty.rowHeightPx).toBe(160)
+  })
+
+  it('computes per-month remaining capacity and over-allocation', () => {
+    const data = member({
+      '2026-01': { total: 55, assignments: [cell(10, 5, 'Acme', 55)] },
+      '2026-02': { total: 100, assignments: [cell(11, 5, 'Acme', 100)] },
+      '2026-03': { total: 130, assignments: [cell(12, 5, 'Acme', 70), cell(13, 6, 'Beta', 60)] },
+    })
+    const [row] = buildTimelineLayout(data, MONTHS, 160)
+    const by = (m: string) => row.months.find(x => x.month === m)!
+    expect(by('2026-01')).toMatchObject({ total: 55, remainingPx: (45 / 100) * 160, over: false })
+    expect(by('2026-02')).toMatchObject({ total: 100, remainingPx: 0, over: false })
+    expect(by('2026-03')).toMatchObject({ total: 130, remainingPx: 0, over: true })
+    // a month with no data is 0% used -> full remaining
+    expect(by('2026-04')).toMatchObject({ total: 0, remainingPx: 160, over: false })
+  })
+
+  it('stacks lanes from the bottom with cumulative bottomOffsetPx', () => {
     const data = member({
       '2026-01': { total: 35, assignments: [cell(10, 5, 'Acme', 20), cell(20, 7, 'Delta', 15)] },
     })
     const [row] = buildTimelineLayout(data, MONTHS, 160)
-    const [acme, delta] = row.lanes
-    expect(acme.topOffsetPx).toBe(0)
+    const [acme, delta] = row.lanes // earliest-start, alphabetical tiebreak: Acme then Delta
+    expect(acme.bottomOffsetPx).toBe(0)
     expect(acme.laneHeightPx).toBe((20 / 100) * 160) // 32
-    expect(delta.topOffsetPx).toBe(acme.laneHeightPx + LANE_GAP_PX) // 34
-    expect(row.rowHeightPx).toBe(acme.laneHeightPx + LANE_GAP_PX + delta.laneHeightPx)
+    expect(delta.bottomOffsetPx).toBe(acme.laneHeightPx + LANE_GAP_PX) // 34
   })
 
   it('floors tiny pills to MIN_PILL_PX', () => {
@@ -97,13 +122,6 @@ describe('buildTimelineLayout', () => {
     expect(row.lanes[0].pills[0].heightPx).toBe(MIN_PILL_PX) // 5% * 160 = 8 -> floored to 16
   })
 
-  it('copies per-month totals and handles an empty team member', () => {
-    const data = member({})
-    const [row] = buildTimelineLayout(data, MONTHS, 160)
-    expect(row.lanes).toHaveLength(0)
-    expect(row.rowHeightPx).toBe(0)
-    expect(row.totalsByMonth['2026-01']).toBe(0)
-  })
 })
 
 describe('computeExtendPlan', () => {

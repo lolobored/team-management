@@ -19,16 +19,23 @@ export interface LayoutPill {
 export interface LayoutLane {
   customerId: number
   customerName: string
-  topOffsetPx: number
+  bottomOffsetPx: number
   laneHeightPx: number
   pills: LayoutPill[]
+}
+
+export interface LayoutMonth {
+  month: string
+  total: number
+  remainingPx: number
+  over: boolean
 }
 
 export interface LayoutRow {
   teamMemberId: number
   teamMemberName: string
   country: string
-  totalsByMonth: Record<string, number>
+  months: LayoutMonth[]
   rowHeightPx: number
   lanes: LayoutLane[]
 }
@@ -102,7 +109,7 @@ export function buildTimelineLayout(
       const laneObj: LayoutLane = {
         customerId,
         customerName: lane.customerName,
-        topOffsetPx: topOffset,
+        bottomOffsetPx: topOffset,
         laneHeightPx,
         pills,
       }
@@ -110,15 +117,22 @@ export function buildTimelineLayout(
       return laneObj
     })
 
-    const totalsByMonth: Record<string, number> = {}
-    months.forEach((m) => { totalsByMonth[m] = member.months[m]?.total ?? 0 })
+    const monthsOut: LayoutMonth[] = months.map((m) => {
+      const total = member.months[m]?.total ?? 0
+      return {
+        month: m,
+        total,
+        remainingPx: (Math.max(0, 100 - total) / 100) * ref,
+        over: total > 100,
+      }
+    })
 
     return {
       teamMemberId: member.teamMemberId,
       teamMemberName: member.teamMemberName,
       country: member.country,
-      totalsByMonth,
-      rowHeightPx: lanes.length ? topOffset - LANE_GAP_PX : 0,
+      months: monthsOut,
+      rowHeightPx: ref,
       lanes,
     }
   })
