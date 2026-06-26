@@ -237,12 +237,7 @@ function onDrop(event: DragEvent, teamMemberId: number, month: string) {
               :style="{
                 height: (mo.over ? 0 : Math.max(0, 100 - mo.total)) + '%',
                 background: mo.over ? undefined : usageColor(mo.total),
-              }">
-              <span class="total-label"
-                :style="{ color: mo.over ? '#dc2626' : usageLabelColor(mo.total) }">
-                {{ mo.total }}%
-              </span>
-            </div>
+              }"></div>
           </div>
         </div>
 
@@ -270,6 +265,17 @@ function onDrop(event: DragEvent, teamMemberId: number, month: string) {
           left: (drag.previewStart / months.length * 100) + '%',
           width: (drag.previewSpan / months.length * 100) + '%',
         }"></div>
+
+        <!-- total-% labels overlaid on top of the pills so they stay readable even when a month is full/over -->
+        <div class="label-overlay">
+          <div v-for="mo in row.months" :key="mo.month" class="label-cell">
+            <span class="total-label" :class="{ over: mo.over }"
+              :data-testid="`total-${mo.month}`"
+              :style="{ color: mo.over ? '#dc2626' : usageLabelColor(mo.total) }">
+              {{ mo.total }}%
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -337,7 +343,10 @@ function onDrop(event: DragEvent, teamMemberId: number, month: string) {
 .bg-cell.over { box-shadow: inset 0 3px 0 #dc2626; }
 .remaining { width: 100%; position: relative; transition: height 0.15s; }
 .remaining.over { box-shadow: inset 0 3px 0 #dc2626; }
-.total-label { position: absolute; top: 1px; right: 3px; font-size: 0.7rem; font-weight: 700; }
+.label-overlay { position: absolute; inset: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; column-gap: 4px; pointer-events: none; z-index: 3; }
+.label-cell { position: relative; }
+.total-label { position: absolute; top: 1px; right: 3px; font-size: 0.7rem; font-weight: 700; background: rgba(255,255,255,0.75); border-radius: 3px; padding: 0 3px; }
+.total-label.over { background: rgba(255,255,255,0.92); }
 .lane { position: absolute; left: 0; right: 0; }
 .pill { position: absolute; bottom: 0; box-sizing: border-box; font-size: 0.7rem; padding: 1px 4px; border-radius: 3px;
   background: #bfdbfe; border: 1px solid #93c5fd; white-space: nowrap; overflow: hidden; display: flex; align-items: flex-end;
