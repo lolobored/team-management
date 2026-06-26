@@ -171,10 +171,10 @@ describe('TimelineGrid (capacity columns)', () => {
     const wrapper = mountGrid()
     const rem = wrapper.findAll('.remaining')
     expect(rem.length).toBe(3) // one per month (testids are per-month: remaining-<month>)
-    // the 55% month: remaining block ~45% tall, label shows 55%
+    // the 55% month: remaining block ~45% tall; label (in the top overlay) shows 55%
     const jan = wrapper.find('[data-testid="remaining-2026-01"]')
     expect(jan.attributes('style')).toContain('height: 45%')
-    expect(jan.text()).toContain('55%')
+    expect(wrapper.find('[data-testid="total-2026-01"]').text()).toContain('55%')
   })
 
   it('flags an over-allocated month red with no remaining block', () => {
@@ -182,7 +182,10 @@ describe('TimelineGrid (capacity columns)', () => {
     const mar = wrapper.find('[data-testid="remaining-2026-03"]')
     expect(mar.attributes('style')).toContain('height: 0%')
     expect(mar.classes()).toContain('over')
-    expect(mar.text()).toContain('130%')
+    // the over total label stays readable in the top overlay, in red
+    const label = wrapper.find('[data-testid="total-2026-03"]')
+    expect(label.text()).toContain('130%')
+    expect(label.classes()).toContain('over')
   })
 
   it('member rows are fixed height and rendered as cards', () => {
