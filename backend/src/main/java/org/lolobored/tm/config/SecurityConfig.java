@@ -1,5 +1,6 @@
 package org.lolobored.tm.config;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -51,6 +52,11 @@ public class SecurityConfig {
             .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> auth
+                // Allow the internal ERROR dispatch so controller-thrown statuses
+                // (400/404/409/422) render via /error instead of being masked as 403
+                // by anyRequest().denyAll(). ERROR dispatches are container-internal,
+                // not client-reachable, so this is safe.
+                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                 .requestMatchers("/api/auth/me", "/api/auth/logout", "/api/auth/change-password").authenticated()
