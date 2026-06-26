@@ -4,9 +4,11 @@ import { useTeamMembersStore } from '@/stores/teamMembers'
 import { useGeoStore } from '@/stores/geo'
 import { teamMemberApi } from '@/api/client'
 import TeamMemberForm from '@/components/TeamMemberForm.vue'
+import { useAuthStore } from '@/stores/auth'
 import type { TeamMember } from '@/types'
 
 const store = useTeamMembersStore()
+const auth = useAuthStore()
 const geo = useGeoStore()
 const countryFilter = ref('')
 const showForm = ref(false)
@@ -92,11 +94,13 @@ function locationDisplay(a: TeamMember): string {
           <option value="">All countries</option>
           <option v-for="c in usedCountries" :key="c" :value="c">{{ c }}</option>
         </select>
-        <button class="primary" @click="openCreate">+ Add Team Member</button>
+        <div v-if="auth.canWrite" data-testid="member-create">
+          <button class="primary" @click="openCreate">+ Add Team Member</button>
+        </div>
       </div>
     </div>
 
-    <div v-if="showForm" class="form-overlay">
+    <div v-if="showForm && auth.canWrite" class="form-overlay">
       <div class="form-panel">
         <h2>{{ editingTeamMember ? 'Edit' : 'Add' }} Team Member</h2>
         <TeamMemberForm :teamMember="editingTeamMember" @submit="onSubmit" @cancel="showForm = false" />
@@ -121,8 +125,10 @@ function locationDisplay(a: TeamMember): string {
           <td>{{ a.country ?? '-' }}</td>
           <td>{{ locationDisplay(a) }}</td>
           <td>
-            <button @click="openEdit(a)">Edit</button>
-            <button class="danger" @click="onDelete(a.id)">Delete</button>
+            <template v-if="auth.canWrite">
+              <button @click="openEdit(a)">Edit</button>
+              <button class="danger" @click="onDelete(a.id)">Delete</button>
+            </template>
           </td>
         </tr>
         <tr v-if="filtered.length === 0">

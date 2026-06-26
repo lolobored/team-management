@@ -1,7 +1,23 @@
 import axios from 'axios'
-import type { TeamMember, Customer, Assignment, TeamMemberUsage, LogoSearchResult } from '@/types'
+import type { TeamMember, Customer, Assignment, TeamMemberUsage, LogoSearchResult, CurrentUser, AppUser, Role } from '@/types'
 
-const api = axios.create({ baseURL: '/api' })
+const api = axios.create({ baseURL: '/api', withCredentials: true })
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      const { useAuthStore } = await import('@/stores/auth')
+      const auth = useAuthStore()
+      auth.currentUser = null
+      const router = (await import('@/router')).default
+      if (router.currentRoute.value.path !== '/login') {
+        router.push('/login')
+      }
+    }
+    return Promise.reject(error)
+  },
+)
 
 export const teamMemberApi = {
   list: () => api.get<TeamMember[]>('/team-members').then(r => r.data),
@@ -61,4 +77,26 @@ export const usageApi = {
 
 export const logoSearchApi = {
   search: (q: string) => api.get<LogoSearchResult[]>('/logo-search', { params: { q } }).then(r => r.data),
+}
+
+export const authApi = {
+  login: (email: string, password: string) =>
+    api.post<CurrentUser>('/auth/login', { email, password }).then(r => r.data),
+  me: () => api.get<CurrentUser>('/auth/me').then(r => r.data),
+  logout: () => api.post('/auth/logout'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post('/auth/change-password', { currentPassword, newPassword }),
+}
+
+export const userApi = {
+  list: () => api.get<AppUser[]>('/users').then(r => r.data),
+  create: (email: string, role: Role, initialPassword: string) =>
+    api.post<AppUser>('/users', { email, role, initialPassword }).then(r => r.data),
+  changeRole: (id: number, role: Role) =>
+    api.patch<AppUser>(`/users/${id}/role`, { role }).then(r => r.data),
+  resetPassword: (id: number, initialPassword: string) =>
+    api.post(`/users/${id}/reset-password`, { initialPassword }),
+  setEnabled: (id: number, enabled: boolean) =>
+    api.patch<AppUser>(`/users/${id}/enabled`, { enabled }).then(r => r.data),
+  remove: (id: number) => api.delete(`/users/${id}`),
 }

@@ -27,3 +27,5 @@ databaseChangeLog:
       file: db/changelog/013-assignment-status.yaml
   - include:
       file: db/changelog/014-rename-architect-to-team-member.yaml
+  - include:
+      file: db/changelog/015-users.yaml

@@ -17,3 +17,13 @@ spring:
 logo-search:
   google-api-key: ${GOOGLE_API_KEY:}
   google-cse-id: ${GOOGLE_CSE_ID:}
+
+server:
+  servlet:
+    session:
+      timeout: 1h
+
+app:
+  admin:
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}

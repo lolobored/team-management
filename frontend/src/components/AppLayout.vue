@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const collapsed = ref(false)
+const auth = useAuthStore()
+const router = useRouter()
+
+async function logout() {
+  await auth.logout()
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -28,7 +36,19 @@ const collapsed = ref(false)
         <li><RouterLink to="/customers" :title="collapsed ? 'Customers' : undefined">
           <span class="nav-icon">🏢</span><span v-show="!collapsed" class="nav-label">Customers</span>
         </RouterLink></li>
+        <li v-if="auth.isAdmin"><RouterLink to="/users" :title="collapsed ? 'Users' : undefined">
+          <span class="nav-icon">🔐</span><span v-show="!collapsed" class="nav-label">Users</span>
+        </RouterLink></li>
       </ul>
+      <div class="sidebar-footer" v-if="auth.currentUser">
+        <div v-show="!collapsed" class="user-meta">
+          <span class="user-email">{{ auth.currentUser.email }}</span>
+          <span class="user-role">{{ auth.currentUser.role }}</span>
+        </div>
+        <button class="logout-btn" data-testid="logout" :title="collapsed ? 'Log out' : undefined" @click="logout">
+          <span class="nav-icon">⏻</span><span v-show="!collapsed" class="nav-label">Log out</span>
+        </button>
+      </div>
     </nav>
     <main class="content">
       <RouterView />
@@ -52,4 +72,12 @@ const collapsed = ref(false)
 .nav-icon { flex-shrink: 0; font-size: 1.1rem; width: 1.3rem; text-align: center; }
 .nav-label { overflow: hidden; text-overflow: ellipsis; }
 .content { flex: 1; padding: 1.5rem; background: #f8fafc; }
+.sidebar { display: flex; flex-direction: column; }
+.sidebar ul { flex: 1; }
+.sidebar-footer { border-top: 1px solid #334155; padding-top: 0.75rem; margin-top: 0.5rem; }
+.user-meta { display: flex; flex-direction: column; margin-bottom: 0.4rem; }
+.user-email { font-size: 0.78rem; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; }
+.user-role { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+.logout-btn { width: 100%; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: none; border: none; color: #cbd5e1; cursor: pointer; border-radius: 4px; }
+.logout-btn:hover { background: #334155; color: #fff; }
 </style>

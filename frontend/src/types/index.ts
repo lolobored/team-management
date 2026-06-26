@@ -49,3 +49,20 @@ export interface LogoSearchResult {
   url: string
   thumbnailUrl: string
 }
+
+export type Role = 'VIEW' | 'VIEW_WRITE' | 'ADMIN'
+
+export interface CurrentUser {
+  email: string
+  role: Role
+  mustChangePassword: boolean
+}
+
+export interface AppUser {
+  id: number
+  email: string
+  role: Role
+  enabled: boolean
+  mustChangePassword: boolean
+  createdAt: string
+}

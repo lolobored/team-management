@@ -1,7 +1,21 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import CustomerSidebar from '@/components/CustomerSidebar.vue'
 import type { Customer } from '@/types'
+
+vi.mock('@/stores/auth', () => ({
+  useAuthStore: () => ({
+    canWrite: true,
+    isAdmin: false,
+    currentUser: { email: 'writer@test.com', role: 'VIEW_WRITE', mustChangePassword: false },
+  }),
+}))
+
+vi.mock('@/api/client', () => ({
+  customerApi: {
+    logoUrl: vi.fn((id: number) => `/api/customers/${id}/logo`),
+  },
+}))
 
 const customers: Customer[] = [
   { id: 1, name: 'Acme', country: 'Australia' },
