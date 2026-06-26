@@ -150,6 +150,49 @@ describe('TimelineGrid (status context menu)', () => {
   })
 })
 
+describe('TimelineGrid (capacity columns)', () => {
+  const months = ['2026-01', '2026-02', '2026-03']
+  const data: any = [{
+    teamMemberId: 1, teamMemberName: 'Alice A', country: 'Singapore',
+    months: {
+      '2026-01': { total: 55, assignments: [{ assignmentId: 10, customerId: 5, customerName: 'Acme', usage: 55, status: 'CONFIRMED' }] },
+      '2026-03': { total: 130, assignments: [
+        { assignmentId: 12, customerId: 5, customerName: 'Acme', usage: 70, status: 'CONFIRMED' },
+        { assignmentId: 13, customerId: 6, customerName: 'Beta', usage: 60, status: 'CONFIRMED' },
+      ] },
+    },
+  }]
+
+  function mountGrid() {
+    return mount(TimelineGrid, { props: { usageData: data, months, zoom: 160 } })
+  }
+
+  it('renders a remaining-capacity block with the total label for an under-100 month', () => {
+    const wrapper = mountGrid()
+    const rem = wrapper.findAll('.remaining')
+    expect(rem.length).toBe(3) // one per month (testids are per-month: remaining-<month>)
+    // the 55% month: remaining block ~45% tall, label shows 55%
+    const jan = wrapper.find('[data-testid="remaining-2026-01"]')
+    expect(jan.attributes('style')).toContain('height: 45%')
+    expect(jan.text()).toContain('55%')
+  })
+
+  it('flags an over-allocated month red with no remaining block', () => {
+    const wrapper = mountGrid()
+    const mar = wrapper.find('[data-testid="remaining-2026-03"]')
+    expect(mar.attributes('style')).toContain('height: 0%')
+    expect(mar.classes()).toContain('over')
+    expect(mar.text()).toContain('130%')
+  })
+
+  it('member rows are fixed height and rendered as cards', () => {
+    const wrapper = mountGrid()
+    const lane = wrapper.find('.lane-area')
+    expect(lane.attributes('style')).toContain('height: 160px')
+    expect(wrapper.find('.grid-row').classes()).toContain('card')
+  })
+})
+
 describe('TimelineGrid (F2 drag-to-extend)', () => {
   // team member 1, customer Acme spans Jan-Feb (idx 0-1); customer Beta in Mar (idx 2)
   const data: TeamMemberUsage[] = [{

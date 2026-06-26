@@ -213,7 +213,7 @@ function onDrop(event: DragEvent, teamMemberId: number, month: string) {
       </div>
     </div>
 
-    <div v-for="row in layout" :key="row.teamMemberId" class="grid-row">
+    <div v-for="row in layout" :key="row.teamMemberId" class="grid-row card">
       <div class="team-member-col">
         <div class="team-member-info">
           <img :src="teamMemberApi.photoUrl(row.teamMemberId)" class="team-member-avatar"
@@ -228,21 +228,27 @@ function onDrop(event: DragEvent, teamMemberId: number, month: string) {
       </div>
 
       <div class="lane-area" :style="{ height: row.rowHeightPx + 'px' }">
-        <!-- background drop-target cells + per-month totals -->
+        <!-- per-month remaining-capacity blocks + drop targets -->
         <div class="cell-grid">
-          <div v-for="month in months" :key="month" class="bg-cell"
-            :style="{ background: usageColor(row.totalsByMonth[month]) }"
-            @dragover="onDragOver" @drop="onDrop($event, row.teamMemberId, month)">
-            <span v-if="row.totalsByMonth[month] > 0" class="total-label"
-              :style="{ color: usageLabelColor(row.totalsByMonth[month]) }">
-              {{ row.totalsByMonth[month] }}%
-            </span>
+          <div v-for="mo in row.months" :key="mo.month" class="bg-cell"
+            @dragover="onDragOver" @drop="onDrop($event, row.teamMemberId, mo.month)">
+            <div class="remaining" :class="{ over: mo.over }"
+              :data-testid="`remaining-${mo.month}`"
+              :style="{
+                height: (mo.over ? 0 : Math.max(0, 100 - mo.total)) + '%',
+                background: mo.over ? undefined : usageColor(mo.total),
+              }">
+              <span class="total-label"
+                :style="{ color: mo.over ? '#dc2626' : usageLabelColor(mo.total) }">
+                {{ mo.total }}%
+              </span>
+            </div>
           </div>
         </div>
 
-        <!-- pill layer -->
+        <!-- pill layer (continuous, bottom-anchored lanes) -->
         <div v-for="lane in row.lanes" :key="lane.customerId" class="lane"
-          :style="{ top: lane.topOffsetPx + 'px', height: lane.laneHeightPx + 'px' }">
+          :style="{ bottom: lane.bottomOffsetPx + 'px', height: lane.laneHeightPx + 'px' }">
           <div v-for="pill in lane.pills" :key="pill.startIdx" data-testid="pill"
             class="pill" :class="{ 'status-probable': pill.status === 'PROBABLE', 'status-potential': pill.status === 'POTENTIAL' }"
             :style="{
@@ -312,22 +318,26 @@ function onDrop(event: DragEvent, teamMemberId: number, month: string) {
 </template>
 
 <style scoped>
-.timeline-grid { overflow: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; flex: 1; min-height: 0; }
+.timeline-grid { overflow: auto; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; flex: 1; min-height: 0; padding: 0 6px 6px; }
 .grid-head { display: flex; position: sticky; top: 0; z-index: 2; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
-.grid-row { display: flex; border-bottom: 1px solid #f1f5f9; }
+.grid-row { display: flex; }
+.grid-row.card { margin-top: 6px; border-radius: 6px; outline: 1px solid #e2e8f0; outline-offset: -1px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); background: #fff; }
 .team-member-col { width: 160px; flex-shrink: 0; position: sticky; left: 0; background: #f8fafc; z-index: 1; padding: 4px; box-sizing: border-box; }
 .team-member-col.head { display: flex; align-items: center; font-weight: 600; font-size: 0.8rem; }
+.team-member-col { border-radius: 6px 0 0 6px; }
 .team-member-info { display: flex; align-items: center; gap: 8px; }
 .team-member-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #e2e8f0; cursor: pointer; }
 .team-member-name { font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .team-member-country { font-size: 0.75rem; color: #64748b; }
-.months-head { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; flex: 1; }
+.months-head { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; column-gap: 4px; flex: 1; }
 .month-col { text-align: center; font-size: 0.8rem; padding: 4px 0; }
-.lane-area { position: relative; flex: 1; min-width: 0; min-height: 44px; }
-.cell-grid { position: absolute; inset: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
-.bg-cell { border-right: 1px solid #f1f5f9; position: relative; transition: background 0.15s; }
+.lane-area { position: relative; flex: 1; min-width: 0; border-radius: 0 6px 6px 0; overflow: hidden; }
+.cell-grid { position: absolute; inset: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; column-gap: 4px; }
+.bg-cell { position: relative; display: flex; flex-direction: column; transition: background 0.15s; }
 .bg-cell:hover { outline: 2px dashed #3b82f6; outline-offset: -2px; }
-.total-label { position: absolute; bottom: 1px; right: 2px; font-size: 0.7rem; font-weight: 700; }
+.remaining { width: 100%; position: relative; transition: height 0.15s; }
+.remaining.over { box-shadow: inset 0 3px 0 #dc2626; }
+.total-label { position: absolute; top: 1px; right: 3px; font-size: 0.7rem; font-weight: 700; }
 .lane { position: absolute; left: 0; right: 0; }
 .pill { position: absolute; bottom: 0; box-sizing: border-box; font-size: 0.7rem; padding: 1px 4px; border-radius: 3px;
   background: #bfdbfe; border: 1px solid #93c5fd; white-space: nowrap; overflow: hidden; display: flex; align-items: flex-end;
