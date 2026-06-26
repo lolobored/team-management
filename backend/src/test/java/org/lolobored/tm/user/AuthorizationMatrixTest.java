@@ -48,14 +48,12 @@ class AuthorizationMatrixTest {
     }
 
     @Test
-    @org.junit.jupiter.api.Disabled("enabled in Task 5")
     void users_viewWriteRole_forbidden() throws Exception {
         mockMvc.perform(get("/api/users").with(user("w@x.com").roles("VIEW_WRITE")))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @org.junit.jupiter.api.Disabled("enabled in Task 5")
     void users_adminRole_allowed() throws Exception {
         mockMvc.perform(get("/api/users").with(user("a@x.com").roles("ADMIN")))
                 .andExpect(status().isOk());
