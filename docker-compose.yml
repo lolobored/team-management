@@ -20,6 +20,8 @@ services:
     build: ./backend
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     ports:
       - "8080:8080"
     depends_on:
