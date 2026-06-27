@@ -12,7 +12,7 @@ vi.mock('@/api/client', () => ({
       { id: 2, email: 'viewer@x.com', role: 'VIEW', enabled: true, mustChangePassword: true, createdAt: '2026-06-02T00:00:00Z' },
     ]),
     create: vi.fn().mockResolvedValue({ id: 3, email: 'new@x.com', role: 'VIEW', enabled: true, mustChangePassword: true, createdAt: '2026-06-03T00:00:00Z' }),
-    changeRole: vi.fn(), resetPassword: vi.fn(), setEnabled: vi.fn(), remove: vi.fn().mockResolvedValue(undefined),
+    changeRole: vi.fn(), resetPassword: vi.fn(), setEnabled: vi.fn(), unlock: vi.fn(), remove: vi.fn().mockResolvedValue(undefined),
   },
 }))
 

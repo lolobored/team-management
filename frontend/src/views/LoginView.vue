@@ -16,8 +16,14 @@ async function submit() {
   try {
     await auth.login(email.value, password.value)
     router.push(auth.currentUser?.mustChangePassword ? '/set-password' : '/timeline')
-  } catch {
-    error.value = 'Invalid email or password'
+  } catch (e: any) {
+    const status = e?.response?.status
+    if (status === 423) {
+      error.value = e?.response?.data?.message
+        || 'Account temporarily locked due to too many failed login attempts. Try again in about 15 minutes.'
+    } else {
+      error.value = 'Invalid email or password'
+    }
   } finally {
     submitting.value = false
   }

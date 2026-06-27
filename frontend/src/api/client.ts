@@ -98,5 +98,6 @@ export const userApi = {
     api.post(`/users/${id}/reset-password`, { initialPassword }),
   setEnabled: (id: number, enabled: boolean) =>
     api.patch<AppUser>(`/users/${id}/enabled`, { enabled }).then(r => r.data),
+  unlock: (id: number) => api.post<AppUser>(`/users/${id}/unlock`).then(r => r.data),
   remove: (id: number) => api.delete(`/users/${id}`),
 }
