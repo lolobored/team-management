@@ -1,7 +1,10 @@
 # Production compose for team-management on a single host (e.g. nuc.local).
-# Runs the published multi-arch images — NO build. Intended location on the host:
-#   /opt/docker/team-management/
+# Runs the published multi-arch images — NO build. Put it in any writable dir
+# (e.g. ~/docker/team-management — no root needed; or /opt/docker/team-management).
 # Configure via the adjacent .env (copy from .env.example). See README.md.
+#
+# Storage: a Docker NAMED volume (pgdata). The daemon manages its permissions, so
+# no host-side chown/root is required — unlike a bind-mount.
 #
 # Exposure: only the frontend is published, on host port 3615. The backend and
 # postgres are reachable only on the internal compose network.
@@ -20,7 +23,10 @@ services:
       timeout: 3s
       retries: 5
     volumes:
-      - ./volumes/pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+      # First-start data load (optional): drop a dump at ./tm.sql next to this file and
+      # uncomment the next line — postgres runs it once on an empty volume. See README.
+      # - ./tm.sql:/docker-entrypoint-initdb.d/01-restore.sql:ro
     # no 'ports:' — postgres is not published to the host
 
   backend:
@@ -55,3 +61,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+
+volumes:
+  pgdata:

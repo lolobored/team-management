@@ -1,126 +1,106 @@
 # Production deployment — team-management
 
-Single-host Docker Compose deploy (target: `nuc.local`, run as **root**, under
-`/opt/docker/team-management`). Runs the **published images** — nothing is built on
-the host. Only the frontend is published, on host port **3615**
-(`http://nuc.local:3615`); backend and postgres stay on the internal network.
+Single-host Docker Compose deploy (e.g. `nuc.local`). **No root required** — runs under
+any user that can use Docker, in any writable directory (e.g.
+`~/docker/team-management`). Runs the **published images** — nothing is built on the host.
+Only the frontend is published, on host port **3615** (`http://<host>:3615`); backend and
+postgres stay on the internal network.
+
+Storage is a Docker **named volume** (`pgdata`) — the daemon manages its permissions, so
+there's no host-side `chown`/root dance (unlike a bind-mount).
 
 Files in this bundle:
 - `docker-compose.yml` — the production stack
 - `.env.example` — config template (copy to `.env`)
 
-> ⚠️ **About the volume you're bringing.** The local `volumes/pgdata` holds your real
-> team / customer / assignment data **and** throwaway login accounts created during
-> development (`admin@example.com`, `viewer@example.com`, `u2@example.com`,
-> `u3@example.com`) with dev passwords. Team-member emails are legacy `@quantexa.com`
-> values. Recommendation below (Step 4, Option B): bring the volume but **reset the
-> `users` table** so the backend bootstraps a clean admin from your `.env` — this keeps
-> all app data and drops the dev logins.
-
 ---
 
-## 0. Prerequisites (on the NUC)
+## 0. Prerequisites (on the host)
 
-- Docker Engine + Compose plugin installed (`docker --version`, `docker compose version`).
-- You can run as root (the steps use `/opt`).
+- Docker Engine + Compose plugin, usable by your user (`docker ps` works without sudo).
 
-## 1. Create the directory (on the NUC, as root)
+## 1. Create the directory + copy the files (host)
 
 ```bash
-mkdir -p /opt/docker/team-management/volumes/pgdata
-cd /opt/docker/team-management
+mkdir -p ~/docker/team-management
+cd ~/docker/team-management
 ```
-
-## 2. Copy the compose + env (from your Mac → NUC)
-
 From the repo on your Mac:
 ```bash
-scp deploy/docker-compose.yml root@nuc.local:/opt/docker/team-management/
-scp deploy/.env.example       root@nuc.local:/opt/docker/team-management/.env
+scp deploy/docker-compose.yml <host>:docker/team-management/
+scp deploy/.env.example       <host>:docker/team-management/.env
 ```
-Then on the NUC edit `/opt/docker/team-management/.env` — set a strong `ADMIN_EMAIL` /
-`ADMIN_PASSWORD`, optionally the Google keys, and confirm `APP_VERSION` (default
-`2026.2.6`).
+Then edit `.env` — set a strong `ADMIN_EMAIL` / `ADMIN_PASSWORD` (the first-login admin),
+optional Google keys, and confirm `APP_VERSION` (default `2026.2.6`).
 
-## 3. Transfer the database volume (from your Mac → NUC)
+## 2. Bring existing data (optional)
 
-Postgres must be **stopped** during the copy for a consistent snapshot.
+Skip this for a brand-new install — the backend creates the schema and bootstraps the
+admin on first start. To migrate an existing database, use a logical dump (version-safe,
+no file-permission issues):
 
 ```bash
-# On your Mac, in the repo dir:
-docker compose down                       # stop the local stack (keeps the bind-mount data)
-
-rsync -a --delete ./volumes/pgdata/ \
-  root@nuc.local:/opt/docker/team-management/volumes/pgdata/
+# On the source machine (local stack running):
+docker compose exec -T postgres pg_dump -U tm teammanagement > tm.sql
+# To start with a clean set of login accounts but keep all app data, append:
+echo 'TRUNCATE TABLE users;' >> tm.sql       # backend then bootstraps a fresh admin from .env
+scp tm.sql <host>:docker/team-management/
 ```
 
-Then on the NUC, fix ownership — the postgres:16 image runs as uid **999**, and the
-files arrive owned by your Mac user:
-```bash
-chown -R 999:999 /opt/docker/team-management/volumes/pgdata
-chmod 700        /opt/docker/team-management/volumes/pgdata
-```
+Auto-load it on first start: in `docker-compose.yml`, **uncomment** the
+`./tm.sql:/docker-entrypoint-initdb.d/01-restore.sql:ro` line under the postgres service.
+On the first `up` (empty volume) postgres runs the dump once; later starts ignore it.
+(Alternatively, leave it commented and restore manually after step 3:
+`docker compose exec -T postgres psql -U tm -d teammanagement < tm.sql`.)
 
-> Alternative (cleaner, version-independent): instead of copying the raw data dir, take a
-> logical dump on the Mac — `docker compose up -d postgres && docker compose exec -T
-> postgres pg_dump -U tm teammanagement > tm.sql` — copy `tm.sql` to the NUC, start an
-> empty stack, and `docker compose exec -T postgres psql -U tm -d teammanagement < tm.sql`.
-> Use this if the raw copy ever complains about permissions or page versions.
-
-## 4. Start the stack (on the NUC, as root)
+## 3. Start the stack (host)
 
 ```bash
-cd /opt/docker/team-management
+cd ~/docker/team-management
 docker compose pull
 docker compose up -d
-docker compose ps          # backend should become "healthy", frontend "Up"
+docker compose ps          # backend becomes "healthy", frontend "Up"
 ```
 
-**Option B (recommended) — reset the login accounts to a clean admin** (keeps all team /
-customer / assignment data, drops the dev logins):
-```bash
-docker compose exec postgres psql -U tm -d teammanagement -c "TRUNCATE TABLE users;"
-docker compose restart backend     # bootstrap re-seeds the admin from your .env
-```
-You can now log in as the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env` (you'll be forced
-to set a new password on first login). Manage further users in the **Users** view.
+First start with no imported data → log in as the `.env` `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+(forced to set a new password on first login). Manage further users in the **Users** view.
 
-*Option A (keep the dev logins as-is): skip the reset. Then the only working admin is the
-dev account `admin@example.com` — not recommended for production.*
-
-## 5. Verify
+## 4. Verify
 
 ```bash
 curl -f http://localhost:3615/api/health           # -> {"status":"ok"}
 curl -o /dev/null -w '%{http_code}\n' http://localhost:3615/   # -> 200 (the SPA)
 ```
-From a browser: `http://nuc.local:3615` → redirected to the login screen.
+Browser: `http://<host>:3615` → login screen.
+
+After a successful first start you can delete `tm.sql` and re-comment its mount line; the
+data now lives in the `pgdata` volume.
 
 ---
 
 ## Updating to a new release
 
 ```bash
-cd /opt/docker/team-management
-# edit .env -> APP_VERSION=<new tag>   (or leave at :latest tracking if you prefer)
+cd ~/docker/team-management
+# edit .env -> APP_VERSION=<new tag>
 docker compose pull
 docker compose up -d
 ```
-Liquibase applies any new migrations automatically on backend start; the volume persists.
+Liquibase applies new migrations automatically on backend start; the volume persists.
 
 ## Backups
 
-The whole database is in `/opt/docker/team-management/volumes/pgdata`. Back it up with a
-logical dump (safe while running):
 ```bash
 docker compose exec -T postgres pg_dump -U tm teammanagement | gzip > tm-$(date +%F).sql.gz
 ```
+The data lives in the `pgdata` named volume (under Docker's storage, typically
+`/var/lib/docker/volumes/team-management_pgdata`).
 
 ## Notes
 
 - **Postgres is internal-only** (no published port). Credentials are `tm`/`tm` to match the
-  backend `docker` profile and the existing volume — acceptable because nothing outside the
-  compose network can reach it. Don't add a `ports:` entry for postgres.
+  backend `docker` profile — acceptable because nothing outside the compose network can
+  reach it. Don't add a `ports:` entry for postgres.
 - **Account lockout / self-lockout:** 5 failed logins lock an account for 15 min. An admin
   can lock themselves out; recovery is wait it out or have another admin unlock. With a
   single admin, keep the password somewhere safe.
