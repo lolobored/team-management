@@ -142,8 +142,20 @@ passwords are not policy-checked (non-blank only).
 can reach only `/api/auth/{me,logout,change-password}` until they set a new password —
 enforced server-side, not just in the frontend guard.
 
+**Account lockout** (`LoginAttemptService` + `User.failedAttempts`/`lockedUntil`): 5
+consecutive failed logins temporarily lock an account for 15 minutes — both configurable
+(`app.security.lockout.max-attempts` / `minutes`). "Locked" is derived from `lockedUntil`
+being in the future (no stored boolean). `AppUserDetailsService` maps it to
+`accountLocked`, so Spring rejects a locked account (→ **423** with an explicit message)
+*before* the password check; a successful login resets the counter. Admins clear a lock
+via `POST /api/users/{id}/unlock` (ADMIN-only) or by resetting the password; disable/enable
+does not. Operational notes: an admin can self-lockout (recovery: wait out the window or
+another admin unlocks — bootstrap only re-seeds an empty table); the 423-vs-401 split
+reveals that a locked account exists (accepted tradeoff for the explicit message).
+
 Note: backend MockMvc tests can't reproduce the real servlet `/error` dispatch, so the
-ERROR-dispatch permit is verified at runtime (drive the running app), not by the suite.
+ERROR-dispatch permit (and thus the 423 reaching the client) is verified at runtime (drive
+the running app), not by the suite.
 
 ## Conventions
 
@@ -165,3 +177,4 @@ This project has been built iteratively through several feature sessions. See `d
 5. **Copy/paste assignments** (2026-06-02) — Cmd+Click selection, clipboard bar, paste-on-click
 6. **Remove projects** (2026-06-24) — eliminated Project entity, assignments link directly to customers
 7. **Authentication & RBAC** (2026-06-26) — Spring Security session login, VIEW/VIEW_WRITE/ADMIN roles, admin-managed users, forced first-login password change, role-based UI gating (released in 2026.2.5)
+8. **Account lockout** (2026-06-27) — 5 failed logins lock an account for 15 min (configurable), 423 on locked login, admin unlock + reset-password clears the lock (released in 2026.2.6)
