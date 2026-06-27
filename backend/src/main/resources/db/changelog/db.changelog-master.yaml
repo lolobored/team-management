@@ -29,3 +29,5 @@ databaseChangeLog:
       file: db/changelog/014-rename-architect-to-team-member.yaml
   - include:
       file: db/changelog/015-users.yaml
+  - include:
+      file: db/changelog/016-user-lockout.yaml

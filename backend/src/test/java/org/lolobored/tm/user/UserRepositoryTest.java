@@ -39,4 +39,12 @@ class UserRepositoryTest {
         assertThat(repository.existsByEmail("b@example.com")).isTrue();
         assertThat(repository.existsByEmail("nope@example.com")).isFalse();
     }
+
+    @Test
+    void lockoutFields_defaultToUnlocked() {
+        User saved = repository.save(newUser("lock@example.com"));
+        User found = repository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getFailedAttempts()).isZero();
+        assertThat(found.getLockedUntil()).isNull();
+    }
 }
