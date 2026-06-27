@@ -18,10 +18,10 @@ public class UserController {
     public record ResetPasswordRequest(String initialPassword) {}
     public record EnabledRequest(boolean enabled) {}
     public record UserDto(Long id, String email, Role role, boolean enabled,
-                          boolean mustChangePassword, Instant createdAt) {
+                          boolean mustChangePassword, Instant lockedUntil, Instant createdAt) {
         static UserDto from(User u) {
             return new UserDto(u.getId(), u.getEmail(), u.getRole(), u.isEnabled(),
-                    u.isMustChangePassword(), u.getCreatedAt());
+                    u.isMustChangePassword(), u.getLockedUntil(), u.getCreatedAt());
         }
     }
 
@@ -82,6 +82,8 @@ public class UserController {
         User u = find(id);
         u.setPasswordHash(encoder.encode(body.initialPassword()));
         u.setMustChangePassword(true);
+        u.setFailedAttempts(0);
+        u.setLockedUntil(null);
         users.save(u);
     }
 
@@ -92,6 +94,14 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "cannot disable your own account");
         }
         u.setEnabled(body.enabled());
+        return UserDto.from(users.save(u));
+    }
+
+    @PostMapping("/{id}/unlock")
+    public UserDto unlock(@PathVariable Long id) {
+        User u = find(id);
+        u.setFailedAttempts(0);
+        u.setLockedUntil(null);
         return UserDto.from(users.save(u));
     }
 
