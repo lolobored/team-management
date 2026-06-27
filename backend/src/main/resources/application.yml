@@ -27,3 +27,7 @@ app:
   admin:
     email: ${ADMIN_EMAIL:}
     password: ${ADMIN_PASSWORD:}
+  security:
+    lockout:
+      max-attempts: 5
+      minutes: 15

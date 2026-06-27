@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 16a
+      author: laurent
+      comment: "Add account-lockout tracking columns to users"
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: failed_attempts
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: locked_until
+                  type: TIMESTAMP

@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -27,13 +28,15 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserRepository users;
     private final PasswordEncoder encoder;
+    private final LoginAttemptService loginAttemptService;
     private final SecurityContextRepository contextRepository = new HttpSessionSecurityContextRepository();
 
     public AuthController(AuthenticationManager authenticationManager, UserRepository users,
-                          PasswordEncoder encoder) {
+                          PasswordEncoder encoder, LoginAttemptService loginAttemptService) {
         this.authenticationManager = authenticationManager;
         this.users = users;
         this.encoder = encoder;
+        this.loginAttemptService = loginAttemptService;
     }
 
     @PostMapping("/login")
@@ -43,9 +46,16 @@ public class AuthController {
         try {
             authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(body.email(), body.password()));
+        } catch (LockedException ex) {
+            long mins = loginAttemptService.minutesRemaining(body.email());
+            throw new ResponseStatusException(HttpStatus.LOCKED,
+                "Account temporarily locked due to too many failed login attempts. "
+                + "Try again in about " + mins + " minute(s).");
         } catch (AuthenticationException ex) {
+            loginAttemptService.recordFailure(body.email());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid email or password");
         }
+        loginAttemptService.recordSuccess(body.email());
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);

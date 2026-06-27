@@ -64,5 +64,6 @@ export interface AppUser {
   role: Role
   enabled: boolean
   mustChangePassword: boolean
+  lockedUntil?: string | null
   createdAt: string
 }

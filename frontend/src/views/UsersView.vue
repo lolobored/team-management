@@ -57,6 +57,15 @@ async function remove(u: AppUser) {
     await load()
   }
 }
+
+function isLocked(u: AppUser): boolean {
+  return !!u.lockedUntil && new Date(u.lockedUntil) > new Date()
+}
+
+async function unlock(u: AppUser) {
+  await userApi.unlock(u.id)
+  await load()
+}
 </script>
 
 <template>
@@ -93,10 +102,14 @@ async function remove(u: AppUser) {
           <td>
             <span :class="u.enabled ? 'on' : 'off'">{{ u.enabled ? 'Enabled' : 'Disabled' }}</span>
             <span v-if="u.mustChangePassword" class="pending"> · must set password</span>
+            <span v-if="isLocked(u)" class="locked" :data-testid="`locked-${u.id}`">
+              · 🔒 locked until {{ new Date(u.lockedUntil!).toLocaleTimeString() }}
+            </span>
           </td>
           <td class="actions">
             <button @click="resetPassword(u)">Reset password</button>
             <button :disabled="isSelf(u)" @click="toggleEnabled(u)">{{ u.enabled ? 'Disable' : 'Enable' }}</button>
+            <button v-if="isLocked(u)" :data-testid="`unlock-${u.id}`" @click="unlock(u)">Unlock</button>
             <button :disabled="isSelf(u)" :data-testid="`delete-${u.id}`" class="danger" @click="remove(u)">Delete</button>
           </td>
         </tr>
@@ -120,5 +133,6 @@ h1 { font-size: 1.3rem; }
 .you { color: #94a3b8; font-size: 0.75rem; }
 .on { color: #16a34a; } .off { color: #dc2626; }
 .pending { color: #d97706; font-size: 0.75rem; }
+.locked { color: #dc2626; font-size: 0.75rem; }
 .error { color: #dc2626; font-size: 0.85rem; }
 </style>
