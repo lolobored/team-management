@@ -1,0 +1,57 @@
+# Production compose for team-management on a single host (e.g. nuc.local).
+# Runs the published multi-arch images — NO build. Intended location on the host:
+#   /opt/docker/team-management/
+# Configure via the adjacent .env (copy from .env.example). See README.md.
+#
+# Exposure: only the frontend is published, on host port 3615. The backend and
+# postgres are reachable only on the internal compose network.
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: teammanagement
+      POSTGRES_USER: tm
+      POSTGRES_PASSWORD: tm   # internal-only; matches the backend 'docker' profile + the existing volume
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tm -d teammanagement"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - ./volumes/pgdata:/var/lib/postgresql/data
+    # no 'ports:' — postgres is not published to the host
+
+  backend:
+    image: lolobored/team-management-backend:${APP_VERSION:-2026.2.6}
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # Seeds the first admin only when the users table is empty (created with
+      # must-change-password). Required so a fresh DB is reachable; harmless on an
+      # already-populated DB (the runner no-ops).
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      # Optional — enables customer logo search; leave blank to disable.
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_CSE_ID: ${GOOGLE_CSE_ID:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # no 'ports:' — the frontend nginx proxies /api to backend:8080 on the network
+
+  frontend:
+    image: lolobored/team-management-frontend:${APP_VERSION:-2026.2.6}
+    restart: unless-stopped
+    ports:
+      - "3615:80"   # the only host-published port; reach the app at http://nuc.local:3615
+    depends_on:
+      backend:
+        condition: service_healthy

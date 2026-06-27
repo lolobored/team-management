@@ -6,3 +6,4 @@ volumes/
 # Generated / tooling artifacts
 .playwright-mcp/
 backend/.gradle/
+deploy/.env
