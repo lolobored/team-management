@@ -39,6 +39,9 @@ services:
       # already-populated DB (the runner no-ops).
       ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in .env}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      # Browser origin(s) allowed to call the API (CORS). MUST include the public URL the
+      # app is served from, or browser logins fail with "Invalid CORS request". Comma-separated.
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174,http://localhost:3000}
       # Optional — enables customer logo search; leave blank to disable.
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       GOOGLE_CSE_ID: ${GOOGLE_CSE_ID:-}
