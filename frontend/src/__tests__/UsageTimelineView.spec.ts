@@ -4,6 +4,18 @@ import { createPinia, setActivePinia } from 'pinia'
 import UsageTimelineView from '@/views/UsageTimelineView.vue'
 import { assignmentApi } from '@/api/client'
 
+// Fixture months must fall inside the view's default visible window (current
+// month .. current + monthCount - 1), so compute them relative to "now"
+// instead of hardcoding calendar months that eventually scroll out of view.
+const { fixtureMonth1, fixtureMonth2 } = vi.hoisted(() => {
+  const toYearMonth = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = now.getMonth() + 1
+  const [ny, nm] = m === 12 ? [y + 1, 1] : [y, m + 1]
+  return { fixtureMonth1: toYearMonth(y, m), fixtureMonth2: toYearMonth(ny, nm) }
+})
+
 vi.mock('@/api/client', () => ({
   teamMemberApi: {
     photoUrl: (id: number) => `/api/team-members/${id}/photo`,
@@ -18,14 +30,14 @@ vi.mock('@/api/client', () => ({
         teamMemberName: 'Alice Smith',
         country: 'Australia',
         months: {
-          '2026-06': {
+          [fixtureMonth1]: {
             total: 40,
             assignments: [
               { assignmentId: 1, customerId: 1, customerName: 'Acme', usage: 20, status: 'CONFIRMED' },
               { assignmentId: 2, customerId: 2, customerName: 'Beta Corp', usage: 20, status: 'PROBABLE' },
             ],
           },
-          '2026-07': {
+          [fixtureMonth2]: {
             total: 20,
             assignments: [
               { assignmentId: 3, customerId: 1, customerName: 'Acme', usage: 20, status: 'CONFIRMED' },
